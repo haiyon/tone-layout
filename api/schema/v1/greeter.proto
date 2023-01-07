@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package schema.v1;
+
+option go_package = "sample/api/schema/v1;mV1";
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message GreeterRequest{
+  string id = 1 [json_name = "id", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter ID"}];
+  string name = 2 [json_name = "name", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter 名称"}];
+  optional google.protobuf.Struct extra = 3 [json_name = "extra", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "扩展信息 JSON"}];
+}
+message GreeterReply {
+  string id = 1 [json_name = "id", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter ID"}];
+  string name = 2 [json_name = "name", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter 名称"}];
+  optional google.protobuf.Struct extra = 3 [json_name = "extra", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "扩展信息 JSON"}];
+  optional google.protobuf.Timestamp created_at = 4 [json_name = "created_at", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "创建日期"}];
+  optional google.protobuf.Timestamp updated_at = 5 [json_name = "updated_at", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "更新日期"}];
+}
+
+message GetGreeterRequest {
+  string greeter = 1 [json_name = "greeter", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter ID"}];
+  string user = 2 [json_name = "user", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "用户 ID"}];
+}
+
+message ListGreetersRequest {
+  string cursor = 1 [json_name = "cursor", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter ID, 游标"}];
+  int32 limit = 2 [json_name = "limit", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "查询数量"}];
+}
+message ListGreetersReply {
+  repeated GreeterReply content = 4 [json_name = "content", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Greeter 列表"}];
+  int32 total = 2 [json_name = "total", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "总记录"}];
+}

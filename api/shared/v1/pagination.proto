@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package shared.v1;
+
+option go_package = "sample/api/shared/v1;sV1";
+
+// Pagination request
+message PaginationRequest {
+  uint32 page = 1; // current page
+  uint32 page_size = 2;  // page size, default: 15
+}
+
+// Pagination reply
+message PaginationReply {
+  uint32 total_number = 1; // total number
+  uint32 total_page = 2; // total page
+  uint32 page = 3; // current page
+  uint32 page_size = 4;  // page size
+}

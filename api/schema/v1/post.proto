@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package schema.v1;
+
+option go_package = "sample/api/schema/v1;mV1";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+message PostRequest {
+  string id = 1 [json_name = "id", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Post ID"}];
+  string name = 2 [json_name = "name", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Post Name"}];
+}
+message PostReply {
+  string id = 1 [json_name = "id", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Post ID"}];
+  string name = 2 [json_name = "name", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Post Name"}];
+}
+message GetPostRequest {
+  string post = 1 [json_name = "post", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Post ID"}];
+}
+message ListPostsRequest {
+  string cursor = 1 [json_name = "cursor", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Cursor"}];
+  int32 limit = 2 [json_name = "limit", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Limit"}];
+}
+message ListPostsReply {
+  repeated PostReply content = 1 [json_name = "content", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Post List"}];
+  int32 total = 2 [json_name = "total", (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "总记录"}];
+}

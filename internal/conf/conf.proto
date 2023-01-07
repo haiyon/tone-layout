@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package sample.conf;
+
+option go_package = "sample/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+  Trace trace = 1;
+  Sentry sentry = 2;
+  Server server = 3;
+  Data data = 4;
+  Auth auth = 5;
+}
+
+message Trace {
+  string endpoint = 1;
+}
+
+message Sentry {
+  string endpoint = 1;
+}
+
+message Server {
+  string mode = 1;
+  message HTTP {
+    string network = 1;
+    string addr = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  message GRPC {
+    string network = 1;
+    string addr = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  HTTP http = 2;
+  GRPC grpc = 3;
+}
+
+message Data {
+  message Database {
+    string driver = 1;
+    string source = 2;
+    string prefix = 3;
+    bool migrate = 4;
+  }
+  message Redis {
+    string addr = 1;
+    string username = 2;
+    string password = 3;
+    int32 db = 4;
+    google.protobuf.Duration read_timeout = 5;
+    google.protobuf.Duration write_timeout = 6;
+    google.protobuf.Duration dial_timeout = 7;
+  }
+  Database database = 1;
+  Redis redis = 2;
+}
+
+message Registry {
+  message Consul {
+    string address = 1;
+    string scheme = 2;
+  }
+  Consul consul = 1;
+}
+
+message Auth {
+  string service = 1; // micro service connection
+  string api = 2; // authentication
+}

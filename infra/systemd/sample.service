@@ -1,0 +1,16 @@
+[Unit]
+Description=Sample layout
+After=network.target
+
+[Service]
+ExecStartPre=/bin/sleep 5
+User=www-data
+SyslogIdentifier=sample
+ExecReload=/bin/kill -s -HUP $MAINPID
+ExecStart=/usr/local/bin/sample -conf /etc/sample/config.yml
+ExecStop=/bin/sleep 5; /bin/kill -s QUIT $MAINPID
+Restart=always
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

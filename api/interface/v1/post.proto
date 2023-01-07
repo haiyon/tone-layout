@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package sample.v1;
+
+option go_package = "sample/api/interface/v1;iV1";
+
+import "google/api/annotations.proto";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+import "api/shared/v1/response.proto";
+import "api/schema/v1/post.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Sample Post APIs"
+    version: "0.1.0"
+    contact: {
+      name: "Tone Solutions"
+      url: "https://stocms.com"
+    }
+    license: {
+      name: "Apache-2.0";
+      url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  }
+};
+
+
+service Post {
+  rpc CreatePost (schema.v1.PostRequest) returns (schema.v1.PostReply)  {
+    option (google.api.http) = {
+      post: "/posts"
+      body: "*"
+    };
+  };
+  rpc GetPost (schema.v1.GetPostRequest) returns (schema.v1.PostReply)  {
+    option (google.api.http) = {
+      get: "/posts/{post}"
+    };
+  };
+  rpc UpdatePost (schema.v1.PostRequest) returns (schema.v1.PostReply)  {
+    option (google.api.http) = {
+      put: "/posts"
+      body: "*"
+    };
+  };
+  rpc DeletePost (schema.v1.GetPostRequest) returns (shared.v1.Response)  {
+    option (google.api.http) = {
+      delete: "/posts/{post}"
+    };
+  };
+  rpc ListPosts (schema.v1.ListPostsRequest) returns (schema.v1.ListPostsReply)  {
+    option (google.api.http) = {
+      get: "/posts"
+    };
+  };
+}

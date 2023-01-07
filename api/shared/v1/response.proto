@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package shared.v1;
+
+option go_package = "sample/api/shared/v1;sV1";
+
+import "google/protobuf/any.proto";
+
+// Response reply
+message Response {
+  optional bool success = 1;
+  optional int32  code = 2;
+  optional string reason = 3;
+  optional string message = 4;
+  optional string request_id = 5;
+  optional google.protobuf.Any data = 6;
+  // map<string, string> metadata = 7;
+}

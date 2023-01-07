@@ -1,0 +1,51 @@
+trace:
+  endpoint: http://127.0.0.1:14268/api/traces
+
+server:
+  http:
+    addr: 127.0.0.1:0
+    timeout: 1s
+  grpc:
+    addr: 127.0.0.1:0
+    timeout: 1s
+
+# database driver option: postgres / mysql
+# database source options:
+# postgres: host=127.0.0.1 port=5432 dbname=stocms user=db_user password=db_password sslmode=disable TimeZone=Asia/Shanghai
+# ref: https://www.postgresql.org/docs/14/ecpg-sql-connect.html
+# mysql: root:root@tcp(127.0.0.1:3306)/test
+# ref: https://dev.mysql.com/doc/refman/8.0/en/connecting-using-uri-or-key-value-pairs.html
+
+data:
+  database:
+    driver: postgres # mysql / postgres
+    # source: host=postgres port=5432 dbname=postgres user=postgres password=postgres sslmode=disable
+    source: postgres://postgres:password@127.0.0.1:5432/postgres?sslmode=disable
+    migrate: true
+  redis:
+    addr: 127.0.0.1:6379
+    username:
+    password: redis_password
+    db: 0
+    read_timeout: 0.4s
+    write_timeout: 0.6s
+    dial_timeout: 1s
+
+storage:
+  provider: local # local（need to set the bucket as the storage path） / qiniu / oss / cos / s3 / azure / huaweiyun
+  id:
+  secret:
+  region:
+  bucket: 'uploads'
+  endpoint:
+
+
+auth:
+  sceret:  # openssl passwd -stdin < <(echo), pipe option: base64 / shasum / md5
+
+consul:
+  address: 127.0.0.1:8500
+  scheme: http
+
+sentry:
+  endpoint:

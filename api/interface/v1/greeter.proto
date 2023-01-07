@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package sample.v1;
+
+option go_package = "sample/api/interface/v1;iV1";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+import "api/shared/v1/response.proto";
+import "api/schema/v1/greeter.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Sample Greeter APIs"
+    version: "0.1.0"
+    contact: {
+      name: "Tone Solutions"
+      url: "https://stocms.com"
+    }
+    license: {
+      name: "Apache-2.0";
+      url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  }
+};
+
+service Greeter {
+  rpc CreateGreeter (schema.v1.GreeterRequest) returns (schema.v1.GreeterReply);
+  rpc GetGreeter (schema.v1.GetGreeterRequest) returns (schema.v1.GreeterReply);
+  rpc UpdateGreeter (schema.v1.GreeterRequest) returns (schema.v1.GreeterReply);
+  rpc DeleteGreeter (schema.v1.GetGreeterRequest) returns (shared.v1.Response);
+  rpc ListGreeters (schema.v1.ListGreetersRequest) returns (schema.v1.ListGreetersReply);
+}
