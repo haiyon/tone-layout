@@ -34,6 +34,14 @@ func (gu *GreeterUpdate) SetName(s string) *GreeterUpdate {
 	return gu
 }
 
+// SetNillableName sets the "name" field if the given value is not nil.
+func (gu *GreeterUpdate) SetNillableName(s *string) *GreeterUpdate {
+	if s != nil {
+		gu.SetName(*s)
+	}
+	return gu
+}
+
 // SetCreatedAt sets the "created_at" field.
 func (gu *GreeterUpdate) SetCreatedAt(t time.Time) *GreeterUpdate {
 	gu.mutation.SetCreatedAt(t)
@@ -81,35 +89,8 @@ func (gu *GreeterUpdate) Mutation() *GreeterMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (gu *GreeterUpdate) Save(ctx context.Context) (int, error) {
-	var (
-		err      error
-		affected int
-	)
 	gu.defaults()
-	if len(gu.hooks) == 0 {
-		affected, err = gu.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GreeterMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			gu.mutation = mutation
-			affected, err = gu.sqlSave(ctx)
-			mutation.done = true
-			return affected, err
-		})
-		for i := len(gu.hooks) - 1; i >= 0; i-- {
-			if gu.hooks[i] == nil {
-				return 0, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gu.hooks[i](mut)
-		}
-		if _, err := mut.Mutate(ctx, gu.mutation); err != nil {
-			return 0, err
-		}
-	}
-	return affected, err
+	return withHooks(ctx, gu.sqlSave, gu.mutation, gu.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -143,16 +124,7 @@ func (gu *GreeterUpdate) defaults() {
 }
 
 func (gu *GreeterUpdate) sqlSave(ctx context.Context) (n int, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   greeter.Table,
-			Columns: greeter.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: greeter.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(greeter.Table, greeter.Columns, sqlgraph.NewFieldSpec(greeter.FieldID, field.TypeString))
 	if ps := gu.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -183,6 +155,7 @@ func (gu *GreeterUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		return 0, err
 	}
+	gu.mutation.done = true
 	return n, nil
 }
 
@@ -197,6 +170,14 @@ type GreeterUpdateOne struct {
 // SetName sets the "name" field.
 func (guo *GreeterUpdateOne) SetName(s string) *GreeterUpdateOne {
 	guo.mutation.SetName(s)
+	return guo
+}
+
+// SetNillableName sets the "name" field if the given value is not nil.
+func (guo *GreeterUpdateOne) SetNillableName(s *string) *GreeterUpdateOne {
+	if s != nil {
+		guo.SetName(*s)
+	}
 	return guo
 }
 
@@ -245,6 +226,12 @@ func (guo *GreeterUpdateOne) Mutation() *GreeterMutation {
 	return guo.mutation
 }
 
+// Where appends a list predicates to the GreeterUpdate builder.
+func (guo *GreeterUpdateOne) Where(ps ...predicate.Greeter) *GreeterUpdateOne {
+	guo.mutation.Where(ps...)
+	return guo
+}
+
 // Select allows selecting one or more fields (columns) of the returned entity.
 // The default is selecting all fields defined in the entity schema.
 func (guo *GreeterUpdateOne) Select(field string, fields ...string) *GreeterUpdateOne {
@@ -254,41 +241,8 @@ func (guo *GreeterUpdateOne) Select(field string, fields ...string) *GreeterUpda
 
 // Save executes the query and returns the updated Greeter entity.
 func (guo *GreeterUpdateOne) Save(ctx context.Context) (*Greeter, error) {
-	var (
-		err  error
-		node *Greeter
-	)
 	guo.defaults()
-	if len(guo.hooks) == 0 {
-		node, err = guo.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GreeterMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			guo.mutation = mutation
-			node, err = guo.sqlSave(ctx)
-			mutation.done = true
-			return node, err
-		})
-		for i := len(guo.hooks) - 1; i >= 0; i-- {
-			if guo.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = guo.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, guo.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*Greeter)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GreeterMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks(ctx, guo.sqlSave, guo.mutation, guo.hooks)
 }
 
 // SaveX is like Save, but panics if an error occurs.
@@ -322,16 +276,7 @@ func (guo *GreeterUpdateOne) defaults() {
 }
 
 func (guo *GreeterUpdateOne) sqlSave(ctx context.Context) (_node *Greeter, err error) {
-	_spec := &sqlgraph.UpdateSpec{
-		Node: &sqlgraph.NodeSpec{
-			Table:   greeter.Table,
-			Columns: greeter.Columns,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: greeter.FieldID,
-			},
-		},
-	}
+	_spec := sqlgraph.NewUpdateSpec(greeter.Table, greeter.Columns, sqlgraph.NewFieldSpec(greeter.FieldID, field.TypeString))
 	id, ok := guo.mutation.ID()
 	if !ok {
 		return nil, &ValidationError{Name: "id", err: errors.New(`ent: missing "Greeter.id" for update`)}
@@ -382,5 +327,6 @@ func (guo *GreeterUpdateOne) sqlSave(ctx context.Context) (_node *Greeter, err e
 		}
 		return nil, err
 	}
+	guo.mutation.done = true
 	return _node, nil
 }

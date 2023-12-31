@@ -1,13 +1,12 @@
 package observes
 
 import (
+	"context"
 	"fmt"
-
-	"sample/pkg/utils"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -26,14 +25,22 @@ type TracerOption struct {
 // NewTracer is the register tracer
 func NewTracer(opt *TracerOption) error {
 	// if not exist tracer config, break
-	if utils.IsNil(opt) {
+	if opt == nil || opt.URL == "" {
 		fmt.Println("Not exist tracer config...")
 		return nil
 	}
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(opt.URL)))
+
+	// GRPC
+	exp, err := otlptracegrpc.New(context.Background(), otlptracegrpc.WithEndpoint(opt.URL), otlptracegrpc.WithInsecure())
 	if err != nil {
 		return err
 	}
+
+	// HTTP
+	// exp, err := otlptracehttp.New(context.Background(), otlptracehttp.WithEndpoint(opt.URL), otlptracehttp.WithInsecure())
+	// if err != nil {
+	// 	return err
+	// }
 
 	tp := trace.NewTracerProvider(
 		trace.WithSampler(trace.ParentBased(trace.TraceIDRatioBased(1.0))),

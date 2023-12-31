@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	"sample/pkg/constant"
-	"sample/pkg/utils"
+	"sample/helper/constant"
+	"sample/helper/utils"
 
 	"github.com/go-kratos/kratos/v2/transport"
 

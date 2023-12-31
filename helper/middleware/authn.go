@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"sample/pkg/constant"
-	"sample/pkg/ecode"
-	"sample/pkg/meta"
-	"sample/pkg/types"
-	"sample/pkg/utils"
+	"sample/helper/constant"
+	"sample/helper/ecode"
+	"sample/helper/meta"
+	"sample/helper/types"
+	"sample/helper/utils"
 
 	"github.com/go-kratos/kratos/v2/middleware"
 )

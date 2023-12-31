@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sample/helper/utils"
 	"sample/internal/conf"
 	"sample/internal/data/ent/migrate"
-	"sample/pkg/utils"
 
 	atlas "ariga.io/atlas/sql/migrate"
 
@@ -28,9 +28,9 @@ var (
 
 	// flagConf is the config flag.
 	flagConf string
-	//flagDir is the migrate dir
+	// flagDir is the migrate dir
 	flagDir string
-	//flagName is the migrate script name
+	// flagName is the migrate script name
 	flagName string
 )
 
@@ -76,7 +76,7 @@ func main() {
 		schema.WithMigrationMode(schema.ModeReplay), // provide migration mode
 		schema.WithDialect(dialect.Postgres),        // Ent dialect to use
 		schema.WithFormatter(atlas.DefaultFormatter),
-		//schema.DisableChecksum(),
+		// schema.DisableChecksum(),
 	}
 	err = migrate.NamedDiff(context.Background(), bc.Data.Database.Source, flagName, opts...)
 	if err != nil {

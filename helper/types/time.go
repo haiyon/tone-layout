@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"sample/pkg/utils"
+	"sample/helper/utils"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 )

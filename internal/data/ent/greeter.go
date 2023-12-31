@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 )
 
@@ -23,7 +24,8 @@ type Greeter struct {
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 	// DeletedAt holds the value of the "deleted_at" field.
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	DeletedAt    *time.Time `json:"deleted_at,omitempty"`
+	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -36,7 +38,7 @@ func (*Greeter) scanValues(columns []string) ([]any, error) {
 		case greeter.FieldCreatedAt, greeter.FieldUpdatedAt, greeter.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		default:
-			return nil, fmt.Errorf("unexpected column %q for type Greeter", columns[i])
+			values[i] = new(sql.UnknownType)
 		}
 	}
 	return values, nil
@@ -81,16 +83,24 @@ func (gr *Greeter) assignValues(columns []string, values []any) error {
 				gr.DeletedAt = new(time.Time)
 				*gr.DeletedAt = value.Time
 			}
+		default:
+			gr.selectValues.Set(columns[i], values[i])
 		}
 	}
 	return nil
+}
+
+// Value returns the ent.Value that was dynamically selected and assigned to the Greeter.
+// This includes values selected through modifiers, order, etc.
+func (gr *Greeter) Value(name string) (ent.Value, error) {
+	return gr.selectValues.Get(name)
 }
 
 // Update returns a builder for updating this Greeter.
 // Note that you need to call Greeter.Unwrap() before calling this method if this Greeter
 // was returned from a transaction, and the transaction was committed or rolled back.
 func (gr *Greeter) Update() *GreeterUpdateOne {
-	return (&GreeterClient{config: gr.config}).UpdateOne(gr)
+	return NewGreeterClient(gr.config).UpdateOne(gr)
 }
 
 // Unwrap unwraps the Greeter entity that was returned from a transaction after it was closed,
@@ -128,9 +138,3 @@ func (gr *Greeter) String() string {
 
 // Greeters is a parsable slice of Greeter.
 type Greeters []*Greeter
-
-func (gr Greeters) config(cfg config) {
-	for _i := range gr {
-		gr[_i].config = cfg
-	}
-}

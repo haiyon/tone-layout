@@ -3,10 +3,10 @@ package data
 import (
 	"context"
 	iV1 "sample/api/interface/v1"
+	"sample/helper/utils"
 	"sample/internal/conf"
 	"sample/internal/data/ent"
 	"sample/internal/data/ent/migrate"
-	"sample/pkg/utils"
 
 	"github.com/go-kratos/kratos/v2/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware/metadata"

@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"sample/pkg/utils"
+	"sample/helper/utils"
 	"strings"
 	"time"
 

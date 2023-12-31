@@ -3,7 +3,7 @@ package observes
 import (
 	"fmt"
 
-	"sample/pkg/utils"
+	"sample/helper/utils"
 
 	"github.com/getsentry/sentry-go"
 )

@@ -2,20 +2,21 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
-	"sample/internal/build"
+	"sample/helper/config"
+	"sample/internal"
 	"sample/internal/conf"
 
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/go-kratos/kratos/v2/transport/http"
 
-	"sample/pkg/observes"
-	"sample/pkg/utils"
+	"sample/helper/observes"
+	"sample/helper/utils"
 
 	"github.com/go-kratos/kratos/v2"
-	"github.com/go-kratos/kratos/v2/config"
-	"github.com/go-kratos/kratos/v2/config/file"
+	kc "github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 
@@ -24,25 +25,22 @@ import (
 
 // go build -ldflags "-X main.Version=x.y.z"
 var (
-	// Identifier is the identifier.
-	Identifier = "sample.stocms.com"
 	// Name is the name.
 	Name = "sample"
-	// flagconf is the config flag.
-	flagconf string
+	// flagConf is the config flag.
+	flagConf string
 	// hostname is the run host name
 	hostname, _ = os.Hostname()
 )
 
 func init() {
-	flag.StringVar(&flagconf, "conf", "../../config.yaml", "config path, eg: -conf config.yaml")
+	flag.StringVar(&flagConf, "conf", "config.yaml", "config path, eg: -conf config.yaml")
 }
 
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, rr registry.Registrar) *kratos.App {
 	return kratos.New(
-		kratos.ID(Identifier),
 		kratos.Name(Name),
-		kratos.Version(build.Version),
+		kratos.Version(internal.Version),
 		kratos.Metadata(map[string]string{}),
 		kratos.Logger(logger),
 		kratos.Server(
@@ -55,20 +53,9 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, rr registry.Reg
 
 func main() {
 	flag.Parse()
-	logger := log.With(log.NewStdLogger(os.Stdout),
-		"identifier", Identifier,
-		"name", Name,
-		"version", build.Version,
-		"built_at", build.BuiltAt,
-		"hostname", hostname,
-		"ts", log.DefaultTimestamp,
-		"caller", log.DefaultCaller,
-		"trace_id", tracing.TraceID(),
-		"span_id", tracing.SpanID(),
-	)
-	c := config.New(
-		config.WithSource(
-			file.NewSource(flagconf),
+	c := kc.New(
+		kc.WithSource(
+			config.Loader(flagConf),
 		),
 	)
 	defer c.Close()
@@ -87,25 +74,41 @@ func main() {
 		log.Fatalf("config.registry: %s", err)
 	}
 
+	// application run name
+	if bc.Server.Mode != "" && bc.Server.Name != "" {
+		Name = fmt.Sprintf("%s.%s", bc.Server.Mode, bc.Server.Name)
+	}
+	// init tracer
 	if err := observes.NewTracer(&observes.TracerOption{
 		URL:         bc.Trace.Endpoint,
 		Name:        Name,
-		Version:     build.Version,
-		Branch:      build.Branch,
-		Revision:    build.Revision,
+		Version:     internal.Version,
+		Branch:      internal.Branch,
+		Revision:    internal.Revision,
 		Environment: bc.Server.Mode,
 	}); utils.IsNotNil(err) {
 		log.Fatalf("tracer.Init: %s", err)
 	}
-
+	// init sentry
 	if err := observes.NewSentry(&observes.SentryOptions{
 		Dsn:         bc.Sentry.Endpoint,
 		Name:        Name,
-		Release:     build.Version,
+		Release:     internal.Version,
 		Environment: bc.Server.Mode,
 	}); err != nil {
 		log.Fatalf("sentry.Init: %s", err)
 	}
+	// init logger
+	logger := log.With(log.NewStdLogger(os.Stdout),
+		"name", Name,
+		"version", internal.Version,
+		"built_at", internal.BuiltAt,
+		"hostname", hostname,
+		"ts", log.DefaultTimestamp,
+		"caller", log.DefaultCaller,
+		"trace_id", tracing.TraceID(),
+		"span_id", tracing.SpanID(),
+	)
 
 	app, cleanup, err := wireApp(bc.Server, bc.Auth, &rc, bc.Data, logger)
 	if utils.IsNotNil(err) {

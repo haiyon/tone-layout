@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sample/helper/utils"
 	"sample/internal/data/ent"
 	"sample/internal/data/ent/greeter"
 	"sample/internal/service"
 	_struct "sample/internal/structs"
-	"sample/pkg/utils"
 	"time"
 
 	"github.com/go-kratos/kratos/v2/log"

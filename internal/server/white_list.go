@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"sample/pkg/types"
+	"sample/helper/types"
 )
 
 // matchWhiteList - operation white list.

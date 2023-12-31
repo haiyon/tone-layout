@@ -1,4 +1,4 @@
-package build
+package internal
 
 // Version is the version.
 var Version = "unknown"

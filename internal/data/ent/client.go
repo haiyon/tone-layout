@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 
 	"sample/internal/data/ent/migrate"
 
 	"sample/internal/data/ent/greeter"
 
+	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 )
@@ -27,9 +29,7 @@ type Client struct {
 
 // NewClient creates a new client configured with the given options.
 func NewClient(opts ...Option) *Client {
-	cfg := config{log: log.Println, hooks: &hooks{}}
-	cfg.options(opts...)
-	client := &Client{config: cfg}
+	client := &Client{config: newConfig(opts...)}
 	client.init()
 	return client
 }
@@ -37,6 +37,62 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Greeter = NewGreeterClient(c.config)
+}
+
+type (
+	// config is the configuration for the client and its builder.
+	config struct {
+		// driver used for executing database requests.
+		driver dialect.Driver
+		// debug enable a debug logging.
+		debug bool
+		// log used for logging on debug mode.
+		log func(...any)
+		// hooks to execute on mutations.
+		hooks *hooks
+		// interceptors to execute on queries.
+		inters *inters
+	}
+	// Option function to configure the client.
+	Option func(*config)
+)
+
+// newConfig creates a new config for the client.
+func newConfig(opts ...Option) config {
+	cfg := config{log: log.Println, hooks: &hooks{}, inters: &inters{}}
+	cfg.options(opts...)
+	return cfg
+}
+
+// options applies the options on the config object.
+func (c *config) options(opts ...Option) {
+	for _, opt := range opts {
+		opt(c)
+	}
+	if c.debug {
+		c.driver = dialect.Debug(c.driver, c.log)
+	}
+}
+
+// Debug enables debug logging on the ent.Driver.
+func Debug() Option {
+	return func(c *config) {
+		c.debug = true
+	}
+}
+
+// Log sets the logging function for debug mode.
+func Log(fn func(...any)) Option {
+	return func(c *config) {
+		c.log = fn
+	}
+}
+
+// Driver configures the client driver.
+func Driver(driver dialect.Driver) Option {
+	return func(c *config) {
+		c.driver = driver
+	}
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -55,11 +111,14 @@ func Open(driverName, dataSourceName string, options ...Option) (*Client, error)
 	}
 }
 
+// ErrTxStarted is returned when trying to start a new transaction from a transactional client.
+var ErrTxStarted = errors.New("ent: cannot start a transaction within a transaction")
+
 // Tx returns a new transactional client. The provided context
 // is used until the transaction is committed or rolled back.
 func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	if _, ok := c.driver.(*txDriver); ok {
-		return nil, errors.New("ent: cannot start a transaction within a transaction")
+		return nil, ErrTxStarted
 	}
 	tx, err := newTx(ctx, c.driver)
 	if err != nil {
@@ -122,6 +181,22 @@ func (c *Client) Use(hooks ...Hook) {
 	c.Greeter.Use(hooks...)
 }
 
+// Intercept adds the query interceptors to all the entity clients.
+// In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
+func (c *Client) Intercept(interceptors ...Interceptor) {
+	c.Greeter.Intercept(interceptors...)
+}
+
+// Mutate implements the ent.Mutator interface.
+func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
+	switch m := m.(type) {
+	case *GreeterMutation:
+		return c.Greeter.mutate(ctx, m)
+	default:
+		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
 // GreeterClient is a client for the Greeter schema.
 type GreeterClient struct {
 	config
@@ -138,6 +213,12 @@ func (c *GreeterClient) Use(hooks ...Hook) {
 	c.hooks.Greeter = append(c.hooks.Greeter, hooks...)
 }
 
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `greeter.Intercept(f(g(h())))`.
+func (c *GreeterClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Greeter = append(c.inters.Greeter, interceptors...)
+}
+
 // Create returns a builder for creating a Greeter entity.
 func (c *GreeterClient) Create() *GreeterCreate {
 	mutation := newGreeterMutation(c.config, OpCreate)
@@ -146,6 +227,21 @@ func (c *GreeterClient) Create() *GreeterCreate {
 
 // CreateBulk returns a builder for creating a bulk of Greeter entities.
 func (c *GreeterClient) CreateBulk(builders ...*GreeterCreate) *GreeterCreateBulk {
+	return &GreeterCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GreeterClient) MapCreateBulk(slice any, setFunc func(*GreeterCreate, int)) *GreeterCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GreeterCreateBulk{err: fmt.Errorf("calling to GreeterClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GreeterCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
 	return &GreeterCreateBulk{config: c.config, builders: builders}
 }
 
@@ -190,6 +286,8 @@ func (c *GreeterClient) DeleteOneID(id string) *GreeterDeleteOne {
 func (c *GreeterClient) Query() *GreeterQuery {
 	return &GreeterQuery{
 		config: c.config,
+		ctx:    &QueryContext{Type: TypeGreeter},
+		inters: c.Interceptors(),
 	}
 }
 
@@ -211,3 +309,33 @@ func (c *GreeterClient) GetX(ctx context.Context, id string) *Greeter {
 func (c *GreeterClient) Hooks() []Hook {
 	return c.hooks.Greeter
 }
+
+// Interceptors returns the client interceptors.
+func (c *GreeterClient) Interceptors() []Interceptor {
+	return c.inters.Greeter
+}
+
+func (c *GreeterClient) mutate(ctx context.Context, m *GreeterMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GreeterCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GreeterUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GreeterUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GreeterDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Greeter mutation op: %q", m.Op())
+	}
+}
+
+// hooks and interceptors per client, for fast access.
+type (
+	hooks struct {
+		Greeter []ent.Hook
+	}
+	inters struct {
+		Greeter []ent.Interceptor
+	}
+)

@@ -14,11 +14,10 @@ type GreeterFunc func(context.Context, *ent.GreeterMutation) (ent.Value, error)
 
 // Mutate calls f(ctx, m).
 func (f GreeterFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	mv, ok := m.(*ent.GreeterMutation)
-	if !ok {
-		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GreeterMutation", m)
+	if mv, ok := m.(*ent.GreeterMutation); ok {
+		return f(ctx, mv)
 	}
-	return f(ctx, mv)
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GreeterMutation", m)
 }
 
 // Condition is a hook condition function.

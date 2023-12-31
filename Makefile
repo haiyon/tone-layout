@@ -8,15 +8,15 @@ BRANCH=$(shell git symbolic-ref -q --short HEAD)
 REVISION=$(shell git rev-parse --short HEAD)
 BUILT_AT := $(shell date +%FT%T%z)
 
-BUILD_VARS := sample/internal/build
+# $(shell a=`basename $$PWD` && echo $$a)
+APP_NAME = sample
+
+BUILD_VARS := ${APP_NAME}/internal
 LDFLAGS := -ldflags "-X ${BUILD_VARS}.Version=${VERSION} -X ${BUILD_VARS}.Branch=$(BRANCH) -X ${BUILD_VARS}.Revision=$(REVISION) -X ${BUILD_VARS}.BuiltAt=${BUILT_AT} -s -w"
 # darwin:amd64 darwin:arm64
 OS_ARCH=linux:amd64 linux:arm64
 
-# $(shell a=`basename $$PWD` && echo $$a)
-APP_NAME = sample
-
-DOCKER_NAMESPACE := cr.uasse.com/sample
+DOCKER_NAMESPACE := cr.uasse.com/${APP_NAME}
 DOCKER_IMAGE := $(shell echo ${APP_NAME}  | awk -F '@' '{print "${DOCKER_NAMESPACE}/" $$0}')
 DOCKER_ARGS := --build-arg APP_NAME=${APP_NAME}
 DOCKER_FILE := infra/docker/Dockerfile
@@ -43,12 +43,20 @@ endif
 
 .PHONY: init
 # init env
-init:
+init: install-tools
+
+.PHONY: install-tools
+# install tools
+install-tools:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	go install github.com/go-kratos/kratos/cmd/kratos/v2@latest
 	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
 	go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
 	go install github.com/google/wire/cmd/wire@latest
+	go install github.com/envoyproxy/protoc-gen-validate@latest
+	go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@latest
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 .PHONY: config
 # generate config proto

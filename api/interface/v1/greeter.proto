@@ -14,7 +14,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
     title: "Sample Greeter APIs"
     version: "0.1.0"
     contact: {
-      name: "Tone Solutions"
+      name: "Sample"
       url: "https://stocms.com"
     }
     license: {
@@ -24,7 +24,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   }
 };
 
-service Greeter {
+service greeter {
   rpc CreateGreeter (schema.v1.GreeterRequest) returns (schema.v1.GreeterReply);
   rpc GetGreeter (schema.v1.GetGreeterRequest) returns (schema.v1.GreeterReply);
   rpc UpdateGreeter (schema.v1.GreeterRequest) returns (schema.v1.GreeterReply);

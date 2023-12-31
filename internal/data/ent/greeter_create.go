@@ -89,50 +89,8 @@ func (gc *GreeterCreate) Mutation() *GreeterMutation {
 
 // Save creates the Greeter in the database.
 func (gc *GreeterCreate) Save(ctx context.Context) (*Greeter, error) {
-	var (
-		err  error
-		node *Greeter
-	)
 	gc.defaults()
-	if len(gc.hooks) == 0 {
-		if err = gc.check(); err != nil {
-			return nil, err
-		}
-		node, err = gc.sqlSave(ctx)
-	} else {
-		var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-			mutation, ok := m.(*GreeterMutation)
-			if !ok {
-				return nil, fmt.Errorf("unexpected mutation type %T", m)
-			}
-			if err = gc.check(); err != nil {
-				return nil, err
-			}
-			gc.mutation = mutation
-			if node, err = gc.sqlSave(ctx); err != nil {
-				return nil, err
-			}
-			mutation.id = &node.ID
-			mutation.done = true
-			return node, err
-		})
-		for i := len(gc.hooks) - 1; i >= 0; i-- {
-			if gc.hooks[i] == nil {
-				return nil, fmt.Errorf("ent: uninitialized hook (forgotten import ent/runtime?)")
-			}
-			mut = gc.hooks[i](mut)
-		}
-		v, err := mut.Mutate(ctx, gc.mutation)
-		if err != nil {
-			return nil, err
-		}
-		nv, ok := v.(*Greeter)
-		if !ok {
-			return nil, fmt.Errorf("unexpected node type %T returned from GreeterMutation", v)
-		}
-		node = nv
-	}
-	return node, err
+	return withHooks(ctx, gc.sqlSave, gc.mutation, gc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
@@ -188,6 +146,9 @@ func (gc *GreeterCreate) check() error {
 }
 
 func (gc *GreeterCreate) sqlSave(ctx context.Context) (*Greeter, error) {
+	if err := gc.check(); err != nil {
+		return nil, err
+	}
 	_node, _spec := gc.createSpec()
 	if err := sqlgraph.CreateNode(ctx, gc.driver, _spec); err != nil {
 		if sqlgraph.IsConstraintError(err) {
@@ -202,19 +163,15 @@ func (gc *GreeterCreate) sqlSave(ctx context.Context) (*Greeter, error) {
 			return nil, fmt.Errorf("unexpected Greeter.ID type: %T", _spec.ID.Value)
 		}
 	}
+	gc.mutation.id = &_node.ID
+	gc.mutation.done = true
 	return _node, nil
 }
 
 func (gc *GreeterCreate) createSpec() (*Greeter, *sqlgraph.CreateSpec) {
 	var (
 		_node = &Greeter{config: gc.config}
-		_spec = &sqlgraph.CreateSpec{
-			Table: greeter.Table,
-			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeString,
-				Column: greeter.FieldID,
-			},
-		}
+		_spec = sqlgraph.NewCreateSpec(greeter.Table, sqlgraph.NewFieldSpec(greeter.FieldID, field.TypeString))
 	)
 	if id, ok := gc.mutation.ID(); ok {
 		_node.ID = id
@@ -242,11 +199,15 @@ func (gc *GreeterCreate) createSpec() (*Greeter, *sqlgraph.CreateSpec) {
 // GreeterCreateBulk is the builder for creating many Greeter entities in bulk.
 type GreeterCreateBulk struct {
 	config
+	err      error
 	builders []*GreeterCreate
 }
 
 // Save creates the Greeter entities in the database.
 func (gcb *GreeterCreateBulk) Save(ctx context.Context) ([]*Greeter, error) {
+	if gcb.err != nil {
+		return nil, gcb.err
+	}
 	specs := make([]*sqlgraph.CreateSpec, len(gcb.builders))
 	nodes := make([]*Greeter, len(gcb.builders))
 	mutators := make([]Mutator, len(gcb.builders))
@@ -263,8 +224,8 @@ func (gcb *GreeterCreateBulk) Save(ctx context.Context) ([]*Greeter, error) {
 					return nil, err
 				}
 				builder.mutation = mutation
-				nodes[i], specs[i] = builder.createSpec()
 				var err error
+				nodes[i], specs[i] = builder.createSpec()
 				if i < len(mutators)-1 {
 					_, err = mutators[i+1].Mutate(root, gcb.builders[i+1].mutation)
 				} else {

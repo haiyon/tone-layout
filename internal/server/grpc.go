@@ -2,9 +2,9 @@ package server
 
 import (
 	iV1 "sample/api/interface/v1"
+	"sample/helper/utils"
 	"sample/internal/conf"
 	"sample/internal/service"
-	"sample/pkg/utils"
 
 	"github.com/go-kratos/sentry"
 
